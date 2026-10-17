@@ -6,7 +6,7 @@ import yaml
 _CONFIG_PATH = Path(__file__).parent.parent / "config.yaml"
 
 def _load_config():
-    with open(_CONFIG_PATH) as f:
+    with open(_CONFIG_PATH, encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 from jarvis.llm import chat  # noqa: E402 — must be module-level for patching
@@ -38,9 +38,13 @@ class ContextManager:
         half = max(1, len(self._window) // 2)
         to_compress = [self._window.popleft() for _ in range(half)]
         text = "\n".join(f"{m['role']}: {m['content']}" for m in to_compress)
-        prompt = f"Summarize this conversation in 2-3 sentences:\n{text}"
+        prompt = (
+            "Resuma esta conversa em português brasileiro, em duas ou três frases, "
+            "preservando informações importantes, preferências e decisões:\n"
+            f"{text}"
+        )
         summary = chat([{"role": "user", "content": prompt}])
-        self._summary = f"[Earlier context: {summary}]"
+        self._summary = f"[Contexto anterior: {summary}]"
 
     def get_messages(self) -> list[dict]:
         """Return context window, prefixed with summary if present."""

@@ -5,7 +5,7 @@ import numpy as np
 _CONFIG_PATH = Path(__file__).parent.parent / "config.yaml"
 
 def _load_config():
-    with open(_CONFIG_PATH) as f:
+    with open(_CONFIG_PATH, encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 _model = None
@@ -42,7 +42,7 @@ def transcribe_audio(audio: np.ndarray) -> str:
     """Transcribe a float32 numpy audio array (16kHz mono) to text."""
     try:
         model = _get_model()
-        segments, _ = model.transcribe(audio, beam_size=5, language="en")
+        segments, _ = model.transcribe(audio, beam_size=5, language=_load_config()["stt"].get("language", "pt"))
         return " ".join(seg.text.strip() for seg in segments).strip()
     except Exception as e:
         # If CUDA worked for loading but fails during inference, retry on CPU
@@ -50,7 +50,7 @@ def transcribe_audio(audio: np.ndarray) -> str:
             print(f"[STT] {_model_device} transcription failed ({e}), reloading on CPU")
             try:
                 model = _get_model(force_cpu=True)
-                segments, _ = model.transcribe(audio, beam_size=5, language="en")
+                segments, _ = model.transcribe(audio, beam_size=5, language=_load_config()["stt"].get("language", "pt"))
                 return " ".join(seg.text.strip() for seg in segments).strip()
             except Exception as e2:
                 print(f"[STT] CPU transcription also failed: {e2}")

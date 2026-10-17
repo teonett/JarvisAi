@@ -4,7 +4,8 @@ wake_word:
   chunk_size: 1280
 stt:
   model: small
-  device: cuda
+  language: pt
+  device: cpu
   compute_type: int8
 llm:
   active_provider: ollama
@@ -20,8 +21,9 @@ context:
   summarize_after: 8
   max_tokens: 2500
 tts:
-  voice: af_heart
-  speed: 1.1
+  voice: pm_alex
+  lang_code: p
+  speed: 1.0
 memory:
   db_path: jarvis/data/memory.db
   chroma_path: jarvis/data/chroma

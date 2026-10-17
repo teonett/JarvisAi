@@ -4,6 +4,47 @@
 
 Este é o guia principal de instalação deste fork. Execute os comandos no **PowerShell**, na pasta do projeto, e avance somente quando cada etapa terminar sem erro. Para esta instalação, utilize **Python 3.11 de 64 bits** e o ambiente `.venv311`.
 
+
+### Atualizar uma instalação existente para PT-BR
+
+Encerre o Jarvis com **Ctrl+C** e execute `git status` antes de atualizar. Se houver alterações locais (por exemplo, no `config.yaml`), preserve-as antes de fazer `git pull`; não descarte suas configurações ou credenciais.
+
+```powershell
+git pull --ff-only
+```
+
+Confira estes campos nos blocos existentes do seu `config.yaml`, preservando os demais valores:
+
+```yaml
+stt:
+  model: small
+  language: pt
+  device: cpu
+  compute_type: int8
+tts:
+  voice: pm_alex
+  lang_code: p
+  speed: 1.0
+```
+
+Baixe a nova voz (mesmo que já tenha baixado uma voz inglesa) e teste a reprodução:
+
+```powershell
+.\.venv311\Scripts\python.exe -c "import yaml; from huggingface_hub import hf_hub_download; cfg=yaml.safe_load(open('config.yaml', encoding='utf-8')); voz=cfg['tts']['voice']; print(hf_hub_download(repo_id='hexgrad/Kokoro-82M', filename=f'voices/{voz}.pt', local_files_only=False))"
+.\.venv311\Scripts\python.exe -c "from jarvis.tts import speak; speak('Olá! Agora estou falando em português brasileiro.')"
+.\.venv311\Scripts\python.exe -m jarvis.main
+```
+
+Outras vozes brasileiras: `pf_dora` (feminina) e `pm_santa` (masculina). Mantenha `lang_code: p`, baixe a voz selecionada e reinicie após alterar. Referência: [vozes oficiais do Kokoro](https://huggingface.co/hexgrad/Kokoro-82M/blob/main/VOICES.md).
+
+Se o teste indicar ausência de `phonemizer` ou `espeakng_loader`, instale-os no mesmo ambiente:
+
+```powershell
+.\.venv311\Scripts\python.exe -m pip install phonemizer espeakng-loader
+```
+
+Diga **“Hey Jarvis”**, espere **“Pode falar.”** e converse em português. Comandos reconhecidos após a transcrição incluem **“pare”**, **“cancelar”** e **“silêncio”**, além dos comandos ingleses existentes. O modelo de ativação não muda de idioma ao renomear uma configuração: **“Olá, Jarvis”** requer um modelo apropriado. A interface e as mensagens internas das ferramentas ainda não foram integralmente traduzidas.
+
 ### 1. Pré-requisitos
 
 | Requisito | Orientação |
@@ -101,7 +142,7 @@ O `config.yaml` já aponta para `qwen3:8b`. Modelos menores, como `qwen3:4b`, po
 
 ### 5. Baixar a voz do Kokoro e preparar a síntese
 
-A voz padrão é `af_heart`. O código procura o arquivo de voz apenas no cache local, por isso o download deve ocorrer **antes de iniciar o Jarvis**:
+A voz padrão é `pm_alex`, em português brasileiro. O código procura o arquivo de voz apenas no cache local, por isso o download deve ocorrer **antes de iniciar o Jarvis**:
 
 ```powershell
 .\.venv311\Scripts\python.exe -c "import yaml; from huggingface_hub import hf_hub_download; cfg=yaml.safe_load(open('config.yaml', encoding='utf-8')); voz=cfg['tts']['voice']; print(hf_hub_download(repo_id='hexgrad/Kokoro-82M', filename=f'voices/{voz}.pt', local_files_only=False))"
@@ -110,7 +151,7 @@ A voz padrão é `af_heart`. O código procura o arquivo de voz apenas no cache 
 Prepare e teste os demais recursos da síntese, ainda com internet:
 
 ```powershell
-.\.venv311\Scripts\python.exe -c "from jarvis.tts import speak_to_bytes; audio=speak_to_bytes('Jarvis online.'); assert len(audio) > 0, 'Nenhum audio gerado'; print('Kokoro pronto. Bytes de audio:', len(audio))"
+.\.venv311\Scripts\python.exe -c "from jarvis.tts import speak_to_bytes; audio=speak_to_bytes('Olá! Jarvis está pronto.'); assert len(audio) > 0, 'Nenhum audio gerado'; print('Kokoro pronto. Bytes de audio:', len(audio))"
 ```
 
 Esse teste gera áudio sem reproduzi-lo. O primeiro carregamento pode baixar pesos e recursos linguísticos. Se alterar a voz em `config.yaml`, repita o download e reinicie a aplicação.
@@ -150,7 +191,7 @@ Prepare o Whisper antes do primeiro comando de voz:
 
 Depois de validar o funcionamento, você pode testar `device: cuda` com GPU NVIDIA e bibliotecas CUDA compatíveis. O projeto tenta voltar para CPU se a inicialização ou inferência CUDA falhar.
 
-**Idioma atual:** a transcrição está fixada em inglês (`language="en"` em `jarvis/stt.py`), a síntese usa a configuração de inglês americano e os comandos de parada estão em inglês. Faça o primeiro teste nesse idioma. Suporte completo a PT-BR exige ajustes no código; trocar apenas o modelo Ollama ou a voz não altera toda a cadeia.
+**Idioma atual:** a conversa por voz usa português brasileiro: `stt.language: pt`, `tts.lang_code: p` e `tts.voice: pm_alex`. A IA recebe instruções para responder em PT-BR; falas fixas, comandos de parada e gatilhos de memória também foram adaptados. A ativação continua sendo **“Hey Jarvis”**; a interface e mensagens técnicas das ferramentas ainda podem aparecer em inglês.
 
 ### 8. Iniciar e usar
 
@@ -162,11 +203,11 @@ Na pasta do projeto:
 .\.venv311\Scripts\python.exe -m jarvis.main
 ```
 
-A interface deve abrir em **http://localhost:7860**. O aplicativo tenta falar “Good morning. Jarvis online.” e, após carregar a ativação, exibe `Listening for wake word...`.
+A interface deve abrir em **http://localhost:7860**. O aplicativo tenta falar “Olá! Jarvis está pronto para ajudar.” e, após carregar a ativação, exibe `Listening for wake word...`.
 
 | Entrada | Como usar |
 |---|---|
-| Voz | Diga **“Hey Jarvis”**, espere **“Yes?”** e fale, por exemplo, **“What time is it?”** |
+| Voz | Diga **“Hey Jarvis”**, espere **“Pode falar.”** e fale, por exemplo, **“Que horas são?”** |
 | Interface web | Digite uma pergunta na barra de conversa e envie |
 | Teclado | Com o terminal em foco, pressione **F2**, digite e pressione Enter |
 | Silenciar voz | Com o terminal em foco, pressione **Insert** |
@@ -413,8 +454,9 @@ stt:
 
 ```yaml
 tts:
-  voice: af_heart   # Kokoro voice name
-  speed: 1.1        # Speech speed (0.5 = slow, 2.0 = fast)
+  voice: pm_alex    # Brazilian Portuguese voice
+  lang_code: p      # Brazilian Portuguese
+  speed: 1.0        # Speech speed (0.5 = slow, 2.0 = fast)
 ```
 
 ---

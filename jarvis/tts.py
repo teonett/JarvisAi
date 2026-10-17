@@ -8,7 +8,7 @@ import threading
 _CONFIG_PATH = Path(__file__).parent.parent / "config.yaml"
 
 def _load_config():
-    with open(_CONFIG_PATH) as f:
+    with open(_CONFIG_PATH, encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 _pipeline = None
@@ -23,11 +23,12 @@ def _get_pipeline():
     if _pipeline is None:
         from kokoro import KPipeline, KModel
         repo_id = "hexgrad/Kokoro-82M"
+        lang_code = _load_config()["tts"].get("lang_code", "p")
         if _LOCAL_PTH.exists():
             kmodel = KModel(repo_id=repo_id, model=str(_LOCAL_PTH)).to("cpu").eval()
-            _pipeline = KPipeline(lang_code="a", repo_id=repo_id, model=kmodel)
+            _pipeline = KPipeline(lang_code=lang_code, repo_id=repo_id, model=kmodel)
         else:
-            _pipeline = KPipeline(lang_code="a", repo_id=repo_id)
+            _pipeline = KPipeline(lang_code=lang_code, repo_id=repo_id)
     return _pipeline
 
 def _get_voice():

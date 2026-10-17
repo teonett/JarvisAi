@@ -28,7 +28,7 @@ class Memory:
 
         _cfg_top_k = 3  # default if config not available
         if db_path is None or chroma_path is None:
-            with open(_CONFIG_PATH) as f:
+            with open(_CONFIG_PATH, encoding="utf-8") as f:
                 cfg = yaml.safe_load(f)["memory"]
             db_path = db_path or str(_resolve_path(cfg["db_path"]))
             chroma_path = chroma_path or str(_resolve_path(cfg["chroma_path"]))
@@ -36,7 +36,7 @@ class Memory:
         else:
             # paths provided directly (e.g. from tests); try to read top_k from config
             try:
-                with open(_CONFIG_PATH) as f:
+                with open(_CONFIG_PATH, encoding="utf-8") as f:
                     cfg = yaml.safe_load(f)["memory"]
                 _cfg_top_k = cfg.get("top_k", 3)
             except Exception:
@@ -100,6 +100,11 @@ class Memory:
             "my birthday", "my password", "my project", "my computer",
             "remember that", "remember this", "don't forget", "keep in mind",
             "call me", "i usually", "i always", "i never",
+            "meu nome é", "meu nome e", "me chamo", "me chame de",
+            "eu sou", "eu trabalho", "trabalho com", "eu gosto", "gosto de",
+            "prefiro", "eu uso", "eu tenho", "moro em",
+            "meu projeto", "meu computador", "lembre que", "lembre-se",
+            "lembre disso", "não esqueça", "nao esqueca",
         ]
         if any(t in user_message.lower() for t in triggers):
             self.store_fact(user_message)

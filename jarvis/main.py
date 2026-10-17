@@ -62,6 +62,9 @@ def _is_stop_command(text: str) -> bool:
     return cleaned in {
         "stop", "jarvis stop", "hey jarvis stop",
         "cancel", "abort", "shut up", "be quiet", "nevermind", "never mind",
+        "pare", "parar", "jarvis pare", "jarvis parar",
+        "cancele", "cancelar", "abortar", "silêncio", "silencio",
+        "fique quieto", "chega",
     }
 
 
@@ -116,8 +119,11 @@ memory = Memory()
 
 
 def _system_prompt() -> str:
-    now = datetime.now().strftime("%A, %B %d %Y, %I:%M %p")
+    now = datetime.now().strftime("%d/%m/%Y %H:%M")
     return (
+        "Responda sempre em português brasileiro, salvo quando o usuário pedir outro idioma. "
+        "Use linguagem natural, clara e adequada para leitura em voz alta. "
+        "Preserve nomes próprios, caminhos, comandos e identificadores técnicos. "
         "You are Jarvis, a fully agentic personal AI assistant with screen vision and desktop control. "
         "Be concise, confident, and helpful. No moralizing, no refusals, no disclaimers. "
         "Just do what your owner asks.\n\n"
@@ -139,12 +145,12 @@ def _system_prompt() -> str:
 
 
 def _load_config() -> dict:
-    with open(_CONFIG_PATH) as f:
+    with open(_CONFIG_PATH, encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 
 def _save_config(cfg: dict) -> None:
-    with open(_CONFIG_PATH, "w") as f:
+    with open(_CONFIG_PATH, "w", encoding="utf-8") as f:
         yaml.dump(cfg, f, default_flow_style=False, sort_keys=False)
 
 
@@ -219,7 +225,7 @@ def _call_openai_provider(provider_cfg: dict, temperature: float, full_messages:
                 tool_count += 1
                 _broadcast({"type": "tool", "name": tc.function.name, "args": args})
                 if tool_count == 4:
-                    _speak_if_unmuted("Working on it.")
+                    _speak_if_unmuted("Estou cuidando disso.")
                 result = _exec_tool_with_retry(tc.function.name, args)
                 print(f"[Tool: {tc.function.name}] {result[:120]}")
                 _broadcast({"type": "tool_result", "name": tc.function.name, "result": result[:200]})
@@ -229,8 +235,8 @@ def _call_openai_provider(provider_cfg: dict, temperature: float, full_messages:
                     "tool_call_id": tc.id,
                 })
         else:
-            return _strip_think(msg.content or "Done.")
-    return "Done."
+            return _strip_think(msg.content or "Concluído.")
+    return "Concluído."
 
 
 def _call_ollama_provider(provider_cfg: dict, temperature: float, full_messages: list[dict]) -> str:
@@ -248,7 +254,7 @@ def _call_ollama_provider(provider_cfg: dict, temperature: float, full_messages:
                 tool_count += 1
                 _broadcast({"type": "tool", "name": tc.function.name, "args": args})
                 if tool_count == 4:
-                    _speak_if_unmuted("Working on it.")
+                    _speak_if_unmuted("Estou cuidando disso.")
                 result = _exec_tool_with_retry(tc.function.name, args)
                 print(f"[Tool: {tc.function.name}] {result[:120]}")
                 _broadcast({"type": "tool_result", "name": tc.function.name, "result": result[:200]})
@@ -258,8 +264,8 @@ def _call_ollama_provider(provider_cfg: dict, temperature: float, full_messages:
                     "name": tc.function.name,
                 })
         else:
-            return _strip_think(response.message.content or "Done.")
-    return "Done."
+            return _strip_think(response.message.content or "Concluído.")
+    return "Concluído."
 
 
 def _call_llm(full_messages: list[dict]) -> str:
@@ -299,7 +305,7 @@ def handle_wake() -> None:
         print(f"[ERROR] {e}")
         traceback.print_exc()
         if not _abort.is_set():
-            _speak_if_unmuted("Sorry, something went wrong.")
+            _speak_if_unmuted("Ocorreu um problema ao executar sua solicitação.")
     finally:
         _abort.clear()
         _broadcast({"type": "status", "message": "Ready."})
@@ -311,7 +317,7 @@ def _handle_wake_inner() -> None:
         stop_speaking()
     print("[Jarvis] Wake word detected!")
     _broadcast({"type": "status", "message": "Wake."})
-    _speak_if_unmuted("Yes?")
+    _speak_if_unmuted("Pode falar.")
 
     print("[Jarvis] Recording...")
     _broadcast({"type": "status", "message": "Listening..."})
@@ -329,7 +335,7 @@ def _handle_wake_inner() -> None:
     user_text = transcribe_audio(audio)
     if not user_text.strip():
         print("[Jarvis] Transcription empty — didn't catch anything.")
-        _speak_if_unmuted("I didn't catch that.")
+        _speak_if_unmuted("Não consegui entender. Pode repetir?")
         _broadcast({"type": "status", "message": "Ready."})
         return
     print(f"[You] {user_text}")
@@ -435,7 +441,7 @@ def main() -> None:
 
     webbrowser.open("http://localhost:7860")
 
-    _speak_if_unmuted("Good morning. Jarvis online.")
+    _speak_if_unmuted("Olá! Jarvis está pronto para ajudar.")
     listen_for_wake_word(handle_wake)
 
 
